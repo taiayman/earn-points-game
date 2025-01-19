@@ -1,0 +1,2212 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <title>Cosmic Coin Dash</title>
+    <script src="https://cdn.jsdelivr.net/npm/phaser@3.55.2/dist/phaser.min.js"></script>
+    <!-- Add FontAwesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    <!-- Add Google Font -->
+    <link href="https://fonts.googleapis.com/css2?family=Righteous&display=swap" rel="stylesheet">
+    <style>
+        * { margin: 0; padding: 0; }
+        html, body {
+            width: 100%;
+            height: 100%;
+            overflow: hidden;
+            background: #4DACFF;
+        }
+        canvas {
+            width: 100vw !important;
+            height: 100vh !important;
+            object-fit: cover;
+        }
+
+        /* Responsive adjustments */
+        @media (max-width: 768px) {
+            #game-ui {
+                padding: 15px;
+            }
+            .coin-counter, .hearts {
+                padding: 8px 15px;
+            }
+            .coin-icon {
+                width: 30px;
+                height: 30px;
+            }
+            .coin-count {
+                font-size: 24px;
+            }
+            .heart {
+                font-size: 24px;
+            }
+        }
+
+        /* Dialog Styles */
+        .mystery-dialog {
+            display: none;
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            width: 400px;
+            background: rgba(28, 32, 47, 0.95);
+            border-radius: 20px;
+            box-shadow: 0 0 40px rgba(0, 0, 0, 0.3),
+                        0 0 80px rgba(255, 215, 0, 0.1);
+            border: 2px solid #FFD700;
+            z-index: 1000;
+            backdrop-filter: blur(10px);
+            animation: dialogPop 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+        }
+
+        .mystery-dialog-overlay {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.7);
+            backdrop-filter: blur(5px);
+            z-index: 999;
+        }
+
+        .mystery-dialog-header {
+            padding: 20px;
+            text-align: center;
+            border-bottom: 2px solid rgba(255, 215, 0, 0.3);
+        }
+
+        .mystery-dialog-title {
+            color: #FFD700;
+            font-size: 24px;
+            font-weight: bold;
+            margin: 0;
+            text-shadow: 0 0 10px rgba(255, 215, 0, 0.3);
+        }
+
+        .mystery-dialog-content {
+            padding: 30px;
+            display: flex;
+            justify-content: space-around;
+            gap: 20px;
+        }
+
+        .mystery-choice {
+            flex: 1;
+            padding: 20px;
+            background: rgba(78, 107, 138, 0.3);
+            border: 2px solid rgba(255, 255, 255, 0.1);
+            border-radius: 15px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            text-align: center;
+            color: white;
+        }
+
+        .mystery-choice:hover {
+            transform: translateY(-5px);
+            background: rgba(78, 107, 138, 0.5);
+            border-color: #FFD700;
+            box-shadow: 0 5px 15px rgba(255, 215, 0, 0.2);
+        }
+
+        .mystery-choice i {
+            font-size: 32px;
+            margin-bottom: 15px;
+            color: #FFD700;
+        }
+
+        .mystery-choice-title {
+            font-size: 18px;
+            font-weight: bold;
+            margin: 10px 0;
+        }
+
+        .mystery-choice-desc {
+            font-size: 14px;
+            color: rgba(255, 255, 255, 0.7);
+        }
+
+        @keyframes dialogPop {
+            0% {
+                transform: translate(-50%, -50%) scale(0.8);
+                opacity: 0;
+            }
+            100% {
+                transform: translate(-50%, -50%) scale(1);
+                opacity: 1;
+            }
+        }
+
+        @keyframes glowPulse {
+            0%, 100% {
+                box-shadow: 0 0 20px rgba(255, 215, 0, 0.2);
+            }
+            50% {
+                box-shadow: 0 0 30px rgba(255, 215, 0, 0.4);
+            }
+        }
+
+        .mystery-choice.selected {
+            animation: selectGlow 0.5s forwards;
+        }
+
+        @keyframes selectGlow {
+            0% {
+                transform: translateY(-5px);
+            }
+            50% {
+                transform: translateY(-5px) scale(1.05);
+                box-shadow: 0 5px 25px rgba(255, 215, 0, 0.4);
+            }
+            100% {
+                transform: translateY(-5px);
+            }
+        }
+
+        /* Dialog Styles */
+        .exit-dialog-overlay {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.7);
+            backdrop-filter: blur(5px);
+            z-index: 1002;
+        }
+
+        .exit-dialog {
+            display: none;
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            width: 300px;
+            background: rgba(28, 32, 47, 0.95);
+            border-radius: 20px;
+            box-shadow: 0 0 40px rgba(0, 0, 0, 0.3);
+            border: 2px solid #FF4444;
+            z-index: 1003;
+            padding: 20px;
+            text-align: center;
+            animation: dialogPop 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+        }
+
+        .exit-dialog h2 {
+            color: #fff;
+            font-size: 24px;
+            margin-bottom: 20px;
+            font-family: 'Righteous', cursive;
+        }
+
+        .exit-dialog p {
+            color: #ccc;
+            margin-bottom: 30px;
+            font-size: 16px;
+        }
+
+        .exit-dialog-buttons {
+            display: flex;
+            justify-content: center;
+            gap: 20px;
+        }
+
+        .exit-button {
+            padding: 12px 30px;
+            border-radius: 25px;
+            border: none;
+            font-family: 'Righteous', cursive;
+            font-size: 16px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            text-transform: uppercase;
+        }
+
+        .exit-yes {
+            background: #FF4444;
+            color: white;
+        }
+
+        .exit-no {
+            background: rgba(255, 255, 255, 0.1);
+            color: white;
+            border: 2px solid rgba(255, 255, 255, 0.2);
+        }
+
+        .exit-button:hover {
+            transform: scale(1.1);
+            box-shadow: 0 0 20px rgba(255, 68, 68, 0.3);
+        }
+
+        .exit-no:hover {
+            background: rgba(255, 255, 255, 0.2);
+        }
+
+        /* Enhanced Game UI Styles */
+        #game-ui {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            z-index: 1000;
+            padding: 16px;
+            pointer-events: none; /* Allow clicks to pass through to game */
+        }
+
+        .top-bar {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            background: rgba(28, 32, 47, 0.85);
+            backdrop-filter: blur(10px);
+            border-radius: 16px;
+            padding: 8px 16px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            margin: 60px 16px;
+            position: relative;
+        }
+
+        .back-button {
+            pointer-events: auto;
+            cursor: pointer;
+            width: 40px;
+            height: 40px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 12px;
+            transition: all 0.3s ease;
+        }
+
+        .back-button:hover {
+            background: rgba(255, 255, 255, 0.2);
+            transform: scale(1.05);
+        }
+
+        .back-button i {
+            color: white;
+            font-size: 20px;
+            text-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+        }
+
+        .left-section {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .profile-image {
+            position: absolute;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 42px;
+            height: 42px;
+            border-radius: 50%;
+            background: rgba(255, 255, 255, 0.1);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 1001;
+        }
+
+        .profile-image img {
+            width: 38px;
+            height: 38px;
+            border-radius: 50%;
+            border: 2px solid rgba(255, 215, 0, 0.5);
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+            object-fit: cover;
+            background-color: rgba(28, 32, 47, 0.5);
+        }
+
+        .coin-counter {
+            display: flex;
+            align-items: center;
+            background: rgba(255, 215, 0, 0.15);
+            padding: 4px 12px;
+            border-radius: 12px;
+            border: 1px solid rgba(255, 215, 0, 0.3);
+        }
+
+        .coin-icon {
+            width: 24px;
+            height: 24px;
+            background: url('data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10" fill="%23FFD700"/></svg>');
+            margin-right: 8px;
+            animation: coinRotate 3s infinite linear;
+        }
+
+        .coin-count {
+            color: #FFD700;
+            font-size: 20px;
+            font-weight: bold;
+            font-family: 'Righteous', cursive;
+            text-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
+        }
+
+        .hearts {
+            display: flex;
+            gap: 8px;
+        }
+
+        .heart {
+            color: #FF4444;
+            font-size: 24px;
+            filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.3));
+            transition: all 0.3s ease;
+        }
+
+        .heart.lost {
+            transform: scale(0);
+            opacity: 0;
+        }
+
+        @keyframes coinRotate {
+            from { transform: rotateY(0deg); }
+            to { transform: rotateY(360deg); }
+        }
+
+        @keyframes heartBeat {
+            0%, 100% { transform: scale(1); }
+            50% { transform: scale(1.1); }
+        }
+
+        .heart:not(.lost) {
+            animation: heartBeat 1.5s infinite ease-in-out;
+        }
+
+        /* Responsive adjustments */
+        @media (max-width: 600px) {
+            .top-bar {
+                margin: 8px;
+                padding: 6px 12px;
+            }
+
+            .back-button {
+                width: 36px;
+                height: 36px;
+            }
+
+            .coin-counter {
+                padding: 6px 12px;
+                margin: 0 12px;
+            }
+
+            .coin-count {
+                font-size: 18px;
+            }
+
+            .heart {
+                font-size: 20px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- Add Exit Dialog HTML -->
+    <div class="exit-dialog-overlay"></div>
+    <div class="exit-dialog">
+        <h2>Exit Game?</h2>
+        <p>Are you sure you want to leave the game?</p>
+        <div class="exit-dialog-buttons">
+            <button class="exit-button exit-no">No, Stay</button>
+            <button class="exit-button exit-yes">Yes, Exit</button>
+        </div>
+    </div>
+
+    <div id="game-ui">
+        <div class="top-bar">
+            <div class="left-section">
+                <div class="back-button" onclick="window.history.back()">
+                    <i class="fas fa-arrow-left"></i>
+                </div>
+                <div class="coin-counter">
+                    <div class="coin-icon"></div>
+                    <span class="coin-count">0</span>
+                </div>
+            </div>
+            <div class="profile-image">
+                <img src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Ccircle cx='12' cy='12' r='12' fill='%234A5568'/%3E%3C/svg%3E"
+                     alt="Profile"
+                     id="profileImage"
+                     onload="this.style.opacity='1'"
+                     onerror="this.src='https://ui-avatars.com/api/?name=P&background=4A5568&color=fff&size=200'; this.style.opacity='1'"
+                     style="opacity: 0; transition: opacity 0.3s ease;" />
+            </div>
+            <div class="hearts">
+                <i class="heart fas fa-heart" data-heart="1"></i>
+                <i class="heart fas fa-heart" data-heart="2"></i>
+                <i class="heart fas fa-heart" data-heart="3"></i>
+            </div>
+        </div>
+    </div>
+    <script src="game.js"></script>
+    
+    <!-- Mystery Box Dialog -->
+    <div class="mystery-dialog-overlay"></div>
+    <div class="mystery-dialog">
+        <div class="mystery-dialog-header">
+            <h2 class="mystery-dialog-title">
+                <i class="fas fa-gift"></i> Choose Your Reward!
+            </h2>
+        </div>
+        <div class="mystery-dialog-content">
+            <div class="mystery-choice" id="ticketChoice">
+                <i class="fas fa-ticket-alt"></i>
+                <div class="mystery-choice-title">Special Ticket</div>
+                <div class="mystery-choice-desc">Get a rare ticket for special rewards!</div>
+            </div>
+            <div class="mystery-choice" id="coinChoice">
+                <i class="fas fa-coins"></i>
+                <div class="mystery-choice-title">150 Coins</div>
+                <div class="mystery-choice-desc">Instant coin reward to spend!</div>
+            </div>
+        </div>
+    </div>
+      <script>
+      const config = {
+    type: Phaser.AUTO,
+    scale: {
+        mode: Phaser.Scale.RESIZE,
+        width: window.innerWidth,
+        height: window.innerHeight,
+        autoCenter: Phaser.Scale.CENTER_BOTH
+    },
+    backgroundColor: '#0a0a2c',
+    physics: {
+        default: 'arcade',
+        arcade: {
+            gravity: { y: 1500 },
+            debug: false
+        }
+    },
+    scene: {
+        preload: preload,
+        create: create,
+        update: update
+    }
+};
+
+const game = new Phaser.Game(config);
+
+const gameSpeed = 400; // Set a normal horizontal speed
+
+let player;
+let ground;
+let troughs;
+let decorations;
+let stars;
+let score = 0;
+let scoreText;
+let gameWidth;
+let gameHeight;
+let nextObstacleX = 0;
+let isJumping = false;
+let starGroups;
+let starPool;
+let lastCoinPosition = { x: 0, y: 0 };
+let coinSpawnCooldown = 0;
+let fireParticles;
+let fireObstacles;
+let jumpsAvailable = 2;
+let hearts = 3;
+let heartSprites = [];
+let coinIcon;
+let coinCountText;
+let mysteryBoxes;
+let hasSpawnedMysteryBox = false;
+
+function preload() {
+    gameWidth = this.scale.width;
+    gameHeight = this.scale.height;
+    
+    const graphics = this.add.graphics();
+    
+    // ============ Create Starfield Texture ============
+    graphics.clear();
+    
+    // Create a large starfield texture that will be tiled
+    const starfieldWidth = 1024;  // Power of 2 for better performance
+    const starfieldHeight = 1024;
+    
+    // Draw dark background
+    graphics.fillStyle(0x0A0A2C);
+    graphics.fillRect(0, 0, starfieldWidth, starfieldHeight);
+    
+    // Draw different types of stars
+    const starTypes = [
+        { count: 300, size: 1, color: 0xFFFFFF, alpha: 0.2 },  // Distant stars
+        { count: 150, size: 1.5, color: 0xFFFFFF, alpha: 0.4 }, // Medium stars
+        { count: 75, size: 2, color: 0xFFFFFF, alpha: 0.6 },    // Bright stars
+        { count: 25, size: 3, color: 0xFFFFFF, alpha: 0.8 }     // Glowing stars
+    ];
+    
+    starTypes.forEach(type => {
+        graphics.fillStyle(type.color);
+        for (let i = 0; i < type.count; i++) {
+            const x = Phaser.Math.Between(0, starfieldWidth);
+            const y = Phaser.Math.Between(0, starfieldHeight);
+            graphics.fillCircle(x, y, type.size);
+            
+            // Add extra stars near edges for seamless tiling
+            if (x < 50) graphics.fillCircle(x + starfieldWidth, y, type.size);
+            if (x > starfieldWidth - 50) graphics.fillCircle(x - starfieldWidth, y, type.size);
+            if (y < 50) graphics.fillCircle(x, y + starfieldHeight, type.size);
+            if (y > starfieldHeight - 50) graphics.fillCircle(x, y - starfieldHeight, type.size);
+        }
+    });
+    
+    graphics.generateTexture('starfield', starfieldWidth, starfieldHeight);
+    
+    // ============ Create Ground Texture ============
+    graphics.clear();
+    
+    // Main ground body - darker base
+    graphics.fillStyle(0x1E3B5A);
+    graphics.fillRect(0, 0, gameWidth, 200);
+    
+    // Middle layer - gradient effect
+    graphics.fillStyle(0x2E4B6A);
+    graphics.fillRect(0, 0, gameWidth, 180);
+    
+    // Top layer - lighter
+    graphics.fillStyle(0x3E5B7A);
+    graphics.fillRect(0, 0, gameWidth, 160);
+    
+    // Top edge detail - subtle line
+    graphics.fillStyle(0x4E6B8A);
+    graphics.fillRect(0, 0, gameWidth, 4);
+    
+    // Subtle ground details - more pronounced texture
+    graphics.fillStyle(0x2E4B6A);
+    for (let i = 0; i < gameWidth; i += 50) {
+        graphics.fillRect(i, 20, 30, 3);
+        graphics.fillRect(i + 20, 40, 20, 2);
+        graphics.fillRect(i + 35, 60, 15, 2);
+    }
+    
+    graphics.generateTexture('ground', gameWidth, 200);
+    
+    // Create trough texture
+    graphics.clear();
+    
+    // Trough sides - darker for depth
+    graphics.fillStyle(0x152A40);
+    graphics.fillRect(0, 0, 120, 200);
+    
+    // Inner trough gradient
+    graphics.fillGradientStyle(0x0A1A30, 0x0A1A30, 0x152A40, 0x152A40, 1);
+    graphics.fillRect(10, 20, 100, 180);
+    
+    // Edge highlights
+    graphics.fillStyle(0x2E4B6A);
+    graphics.fillRect(0, 0, 120, 4);  // Top edge
+    graphics.fillRect(0, 0, 4, 200);  // Left edge
+    graphics.fillRect(116, 0, 4, 200); // Right edge
+    
+    graphics.generateTexture('trough', 120, 200);
+    
+    // ============ Create Player Texture ============
+    graphics.clear();
+    
+    // Create normal eyes frame
+    graphics.fillStyle(0x2D3250); // Dark base
+    graphics.fillRoundedRect(0, 0, 50, 70, 20);
+    graphics.fillStyle(0x3D4260); // Lighter front
+    graphics.fillRoundedRect(0, 0, 40, 70, 20);
+    
+    // Open eyes
+    graphics.fillStyle(0xFFFFFF);
+    graphics.fillCircle(25, 20, 8);
+    graphics.fillStyle(0x000000);
+    graphics.fillCircle(27, 20, 4);
+    
+    graphics.generateTexture('player_open', 50, 70);
+    
+    // Create half-closed eyes frame
+    graphics.clear();
+    graphics.fillStyle(0x2D3250);
+    graphics.fillRoundedRect(0, 0, 50, 70, 20);
+    graphics.fillStyle(0x3D4260);
+    graphics.fillRoundedRect(0, 0, 40, 70, 20);
+    
+    // Half-closed eyes
+    graphics.fillStyle(0xFFFFFF);
+    graphics.fillEllipse(25, 20, 8, 4);
+    graphics.fillStyle(0x000000);
+    graphics.fillEllipse(27, 20, 4, 2);
+    
+    graphics.generateTexture('player_half', 50, 70);
+    
+    // Create closed eyes frame
+    graphics.clear();
+    graphics.fillStyle(0x2D3250);
+    graphics.fillRoundedRect(0, 0, 50, 70, 20);
+    graphics.fillStyle(0x3D4260);
+    graphics.fillRoundedRect(0, 0, 40, 70, 20);
+    
+    // Closed eyes (just a line)
+    graphics.lineStyle(2, 0xFFFFFF);
+    graphics.lineBetween(21, 20, 29, 20);
+    
+    graphics.generateTexture('player_closed', 50, 70);
+    
+    // ============ Create Tree Texture ============
+    graphics.clear();
+    
+    // Trunk
+    graphics.fillStyle(0x3A2E21);
+    graphics.fillRect(35, 60, 30, 100);
+    
+    // Main tree body (large circles for foliage)
+    graphics.fillStyle(0x1D4A17); // Darkest back
+    graphics.fillCircle(50, 50, 45);
+    
+    graphics.fillStyle(0x2D5A27); // Dark middle
+    graphics.fillCircle(45, 45, 42);
+    
+    graphics.fillStyle(0x3D6A37); // Main color
+    graphics.fillCircle(40, 40, 38);
+    
+    // Highlight circles
+    graphics.fillStyle(0x4D7A47);
+    graphics.fillCircle(30, 30, 15);
+    graphics.fillCircle(45, 45, 10);
+    
+    graphics.generateTexture('tree', 100, 160);
+    
+    // ============ Create Obstacle Texture ============
+    graphics.clear();
+    graphics.fillStyle(0xFF4081);
+    graphics.fillTriangle(30, 0, 60, 70, 0, 70);
+    graphics.generateTexture('obstacle', 60, 70);
+    
+    // ============ Create Enhanced Coin Texture ============
+    graphics.clear();
+    
+    // Base coin shape (slightly elliptical for 3D effect)
+    graphics.fillStyle(0xFFA000); // Darker base
+    graphics.fillEllipse(20, 20, 40, 36);
+    
+    // Main coin body
+    graphics.fillStyle(0xFFD700); // Classic gold
+    graphics.fillEllipse(20, 20, 36, 32);
+    
+    // Inner detail
+    graphics.fillStyle(0xFFE650);
+    graphics.fillEllipse(20, 20, 28, 24);
+    
+    // Highlight for 3D effect
+    graphics.fillStyle(0xFFF4A0);
+    graphics.fillEllipse(16, 16, 12, 10);
+    
+    // Edge shine
+    graphics.lineStyle(2, 0xFFF4A0, 0.6);
+    graphics.strokeEllipse(20, 20, 36, 32);
+    
+    graphics.generateTexture('coin', 40, 40);
+    
+    // ============ Create Fire Obstacle Texture ============
+    graphics.clear();
+    
+    // Wood base - darker bottom for depth
+    graphics.fillStyle(0x3A2E21);  // Dark wood color
+    graphics.fillRect(10, 70, 80, 20);  // Thinner base log
+    
+    // Wood top - lighter for 2.5D effect
+    graphics.fillStyle(0x4A3E31);  // Lighter wood
+    graphics.fillRect(10, 65, 80, 5);  // Thin top highlight
+    
+    // Wood detail lines for texture
+    graphics.lineStyle(1, 0x2A1E11);
+    for (let i = 0; i < 4; i++) {
+        graphics.lineBetween(20 + i * 20, 65, 20 + i * 20, 90);
+    }
+    
+    graphics.generateTexture('fire_base', 100, 100);
+    
+    // Create animated fire frames
+    const fireColors = [
+        0xFF3300, // Base red
+        0xFF6600, // Orange
+        0xFF9900, // Light orange
+        0xFFCC00  // Yellow
+    ];
+    
+    // Generate 6 frames of fire animation
+    for (let frame = 0; frame < 6; frame++) {
+        graphics.clear();
+        
+        // Draw multiple flame shapes for each frame
+        for (let flame = 0; flame < 3; flame++) {
+            const flameHeight = 30 + Math.sin(frame / 2 + flame) * 10;
+            const flameWidth = 15 + Math.cos(frame / 3 + flame) * 5;
+            const xPos = 15 + flame * 20;
+            
+            // Draw each color layer of the flame
+            fireColors.forEach((color, index) => {
+                const height = flameHeight * (1 - index * 0.2);
+                const width = flameWidth * (1 - index * 0.15);
+                graphics.fillStyle(color, 0.8 - index * 0.15);
+                
+                // Create triangular flame shape
+                graphics.beginPath();
+                graphics.moveTo(xPos - width, 30);  // Base left
+                graphics.lineTo(xPos, 30 - height); // Peak
+                graphics.lineTo(xPos + width, 30);  // Base right
+                graphics.lineTo(xPos - width, 30);  // Back to start
+                graphics.closePath();
+                graphics.fill();
+                
+                // Add glow effect
+                graphics.fillStyle(color, 0.3);
+                graphics.beginPath();
+                graphics.moveTo(xPos - width * 1.2, 30);
+                graphics.lineTo(xPos, 30 - height * 0.9);
+                graphics.lineTo(xPos + width * 1.2, 30);
+                graphics.closePath();
+                graphics.fill();
+            });
+        }
+        
+        graphics.generateTexture('fire_' + frame, 60, 60);
+    }
+    
+    // Add jump particle texture
+    graphics.clear();
+    
+    // Create a small, bright particle texture
+    const particleColors = [
+        { color: 0x4444ff, alpha: 1.0 },   // Bright blue core
+        { color: 0x0066ff, alpha: 0.8 },   // Medium blue
+        { color: 0x66ccff, alpha: 0.6 }    // Light blue glow
+    ];
+    
+    particleColors.forEach(({ color, alpha }) => {
+        graphics.fillStyle(color, alpha);
+        graphics.fillCircle(4, 4, 4 - particleColors.indexOf({ color, alpha }));
+    });
+    
+    graphics.generateTexture('jump_particle', 8, 8);
+    
+    // Create heart texture
+    graphics.clear();
+    
+    // Heart shape using circles and triangles
+    graphics.fillStyle(0xFF4444);
+    
+    // Draw two circles for the top of the heart
+    graphics.fillCircle(8, 8, 6);  // Left circle
+    graphics.fillCircle(16, 8, 6); // Right circle
+    
+    // Draw triangle for bottom of heart
+    graphics.beginPath();
+    graphics.moveTo(3, 10);    // Left point
+    graphics.lineTo(12, 20);   // Bottom point
+    graphics.lineTo(21, 10);   // Right point
+    graphics.closePath();
+    graphics.fillPath();
+    
+    // Add shine
+    graphics.fillStyle(0xFFFFFF, 0.3);
+    graphics.fillCircle(8, 8, 3);
+    
+    graphics.generateTexture('heart', 24, 24);
+    
+    // Create coin icon texture (larger version of coin)
+    graphics.clear();
+    
+    // Base coin shape
+    graphics.fillStyle(0xFFA000);
+    graphics.fillCircle(20, 20, 20);
+    
+    // Main coin body
+    graphics.fillStyle(0xFFD700);
+    graphics.fillCircle(20, 20, 18);
+    
+    // Inner detail
+    graphics.fillStyle(0xFFE650);
+    graphics.fillCircle(20, 20, 14);
+    
+    // Highlight
+    graphics.fillStyle(0xFFF4A0);
+    graphics.fillCircle(16, 16, 6);
+    
+    graphics.generateTexture('coin_icon', 40, 40);
+    
+    // Create mystery box textures
+    // Box front
+    graphics.clear();
+    graphics.lineStyle(2, 0x333333);
+    graphics.fillStyle(0x8B4513);  // Brown base
+    graphics.fillRect(0, 0, 40, 40);
+    graphics.fillStyle(0xA0522D);  // Lighter brown for 3D effect
+    graphics.fillRect(2, 2, 36, 36);
+    
+    // Draw question mark using shapes
+    graphics.lineStyle(3, 0xFFD700);  // Gold question mark
+    // Draw the curve of the question mark
+    graphics.beginPath();
+    graphics.moveTo(15, 10);
+    graphics.lineTo(25, 10);
+    graphics.lineTo(25, 20);
+    graphics.lineTo(20, 25);
+    graphics.lineTo(20, 28);
+    graphics.stroke();
+    // Draw the dot of the question mark
+    graphics.fillStyle(0xFFD700);
+    graphics.fillCircle(20, 33, 2);
+    
+    graphics.generateTexture('box_front', 40, 40);
+
+    // Box top (for 3D effect)
+    graphics.clear();
+    graphics.fillStyle(0x6B2E0B);  // Darker brown for top
+    graphics.beginPath();
+    graphics.moveTo(0, 0);
+    graphics.lineTo(40, 0);
+    graphics.lineTo(35, 5);
+    graphics.lineTo(-5, 5);
+    graphics.closePath();
+    graphics.fill();
+    graphics.generateTexture('box_top', 40, 5);
+
+    // Box side (for 3D effect)
+    graphics.clear();
+    graphics.fillStyle(0x5B1E0B);  // Even darker brown for side
+    graphics.beginPath();
+    graphics.moveTo(40, 0);
+    graphics.lineTo(40, 40);
+    graphics.lineTo(35, 35);
+    graphics.lineTo(35, -5);
+    graphics.closePath();
+    graphics.fill();
+    graphics.generateTexture('box_side', 5, 40);
+
+    // Move graphics.destroy() to the end after all textures are generated
+    graphics.destroy();
+}
+
+function create() {
+    // Remove speed tracking variables
+    hasSpawnedMysteryBox = false; // Reset the flag on game start
+    
+    // Create tiled starfield background
+    const starfieldTiles = [];
+    for (let i = 0; i < 3; i++) {
+        for (let j = 0; j < 2; j++) {
+            const starfield = this.add.tileSprite(
+                i * 1024,
+                j * 1024,
+                1024,
+                1024,
+                'starfield'
+            );
+            starfield.setOrigin(0, 0);
+            starfield.setDepth(-2);
+            starfield.setScrollFactor(0.01);
+            starfieldTiles.push(starfield);
+        }
+    }
+    
+    // Store starfield tiles in game instance for update access
+    this.starfieldTiles = starfieldTiles;
+    
+    // ============ Create Game Objects ============
+    ground = this.physics.add.staticGroup();
+    troughs = this.physics.add.staticGroup();
+    decorations = this.add.group();
+    obstacles = this.physics.add.group();
+    coins = this.physics.add.group();
+    fireObstacles = this.physics.add.staticGroup();
+    
+    // Initialize mystery boxes group
+    mysteryBoxes = this.add.group();
+    
+    // Initialize fire particle system with proper depth
+    fireParticles = this.add.particles('flame_particle');
+    fireParticles.setDepth(7);  // Set initial depth for all fire particles
+    
+    // Create dialog background and container (hidden by default)
+    const dialogBg = this.add.rectangle(gameWidth/2, gameHeight/2, gameWidth, gameHeight, 0x000000, 0.7);
+    dialogBg.setScrollFactor(0);
+    dialogBg.setDepth(100);
+    dialogBg.visible = false;
+    
+    const dialogBox = this.add.container(gameWidth/2, gameHeight/2);
+    dialogBox.setScrollFactor(0);
+    dialogBox.setDepth(101);
+    
+    // Create dialog panel
+    const panel = this.add.rectangle(0, 0, 400, 200, 0x3D4260);
+    panel.setStrokeStyle(2, 0xFFD700);
+    
+    // Create title text
+    const titleText = this.add.text(0, -70, 'Choose Your Reward!', {
+        fontSize: '28px',
+        fill: '#FFD700',
+        fontFamily: 'Arial',
+        align: 'center'
+    }).setOrigin(0.5);
+    
+    // Create option buttons
+    const ticketBtn = this.add.rectangle(-100, 20, 150, 60, 0x4E6B8A);
+    const ticketText = this.add.text(-100, 20, 'Get Ticket', {
+        fontSize: '20px',
+        fill: '#ffffff',
+        fontFamily: 'Arial'
+    }).setOrigin(0.5);
+    
+    const coinBtn = this.add.rectangle(100, 20, 150, 60, 0x4E6B8A);
+    const coinText = this.add.text(100, 20, '30 Coins', {
+        fontSize: '20px',
+        fill: '#ffffff',
+        fontFamily: 'Arial'
+    }).setOrigin(0.5);
+    
+    // Add hover effects
+    [ticketBtn, coinBtn].forEach(btn => {
+        btn.setInteractive();
+        btn.on('pointerover', () => {
+            btn.setFillStyle(0x6E8BAA);
+        });
+        btn.on('pointerout', () => {
+            btn.setFillStyle(0x4E6B8A);
+        });
+    });
+    
+    // Add all elements to dialog container
+    dialogBox.add([panel, titleText, ticketBtn, ticketText, coinBtn, coinText]);
+    dialogBox.visible = false;
+    
+    // Store dialog elements in game instance
+    this.dialogElements = {
+        bg: dialogBg,
+        container: dialogBox,
+        ticketBtn,
+        coinBtn
+    };
+    
+    // Add click handlers for buttons
+    ticketBtn.on('pointerdown', () => {
+        handleTicketReward.call(this);
+        hideDialog.call(this);
+    });
+    
+    coinBtn.on('pointerdown', () => {
+        handleCoinReward.call(this);
+        hideDialog.call(this);
+    });
+    
+    // Create initial ground segments
+    for (let i = 0; i < 3; i++) {
+        const groundSegment = ground.create(gameWidth * i, gameHeight, 'ground');
+        groundSegment.setOrigin(0, 1);
+        groundSegment.setDepth(5);
+        groundSegment.refreshBody();
+    }
+    
+    // Create player
+    player = this.physics.add.sprite(gameWidth * 0.2, gameHeight - 200, 'player_open');
+    player.setOrigin(0.5, 1);
+    player.setDepth(10);
+    player.setCollideWorldBounds(false);
+    
+    // Create blink animation
+    this.anims.create({
+        key: 'blink',
+        frames: [
+            { key: 'player_open', duration: 2500 },    // Stay open longer
+            { key: 'player_half', duration: 50 },      // Quick transition
+            { key: 'player_closed', duration: 100 },   // Brief closed
+            { key: 'player_half', duration: 50 },      // Quick transition
+            { key: 'player_open', duration: 50 }       // Back to open
+        ],
+        repeat: -1,
+        repeatDelay: Phaser.Math.Between(2000, 5000)  // Random delay between blinks
+    });
+    
+    // Start blinking
+    player.play('blink');
+    
+    // Create particle manager for coin collection
+    this.coinParticles = this.add.particles('coin');
+    
+    // Configure the emitter
+    this.coinEmitter = this.coinParticles.createEmitter({
+        x: 0,
+        y: 0,
+        speed: { min: 100, max: 200 },
+        angle: { min: -30, max: 30 },
+        scale: { start: 0.4, end: 0 },
+        lifespan: 800,
+        gravityY: 300,
+        quantity: 1,
+        blendMode: 'ADD'
+    });
+    
+    this.coinEmitter.stop(); // Start stopped
+    this.coinParticles.setDepth(15);
+
+    // Score text with modern styling
+    scoreText = this.add.text(16, 16, 'Score: 0', {
+        fontSize: '32px',
+        fill: '#fff',
+        fontFamily: 'Arial',
+        padding: { x: 16, y: 8 },
+        backgroundColor: '#00000066'
+    }).setScrollFactor(0).setDepth(20);
+    
+    // Setup collisions
+    this.physics.add.collider(player, ground);
+    this.physics.add.collider(player, obstacles, function() {
+        if (handleObstacleCollision.call(this)) {
+            gameOver.call(this);
+        }
+    }, null, this);
+    this.physics.add.collider(player, fireObstacles, function() {
+        if (handleObstacleCollision.call(this)) {
+            gameOver.call(this);
+        }
+    }, null, this);
+    this.physics.add.overlap(player, coins, collectCoin, null, this);
+    
+    // Camera follow
+    this.cameras.main.startFollow(player, true);
+    this.cameras.main.setFollowOffset(-gameWidth * 0.3, gameHeight * 0.2);
+    this.cameras.main.setZoom(1.2);
+    
+    // Simple touch/jump
+    this.input.on('pointerdown', function() {
+        if (jumpsAvailable > 0) {
+            player.setVelocityY(-850);
+            jumpsAvailable--;
+            
+            if (jumpsAvailable === 1) {
+                // First jump animation (unchanged)
+                // ...
+            } else {
+                // Second jump (flip animation)
+                this.tweens.add({
+                    targets: player,
+                    angle: 360,
+                    duration: 500,
+                    ease: 'Quad.easeOut',
+                    onComplete: () => {
+                        player.angle = 0;
+                    }
+                });
+                
+                // Enhanced double jump particles
+                const particles = this.add.particles('jump_particle');
+                const emitter = particles.createEmitter({
+                    x: player.x,
+                    y: player.y,
+                    speed: { min: 100, max: 200 },
+                    scale: { start: 1, end: 0 },
+                    alpha: { start: 1, end: 0 },
+                    lifespan: 800,
+                    quantity: 15,
+                    angle: { min: 180, max: 360 },
+                    blendMode: 'ADD',
+                    gravityY: 300
+                });
+                
+                // Burst effect
+                emitter.explode(20, player.x, player.y);
+                
+                // Clean up particles after animation
+                this.time.delayedCall(800, () => {
+                    particles.destroy();
+                });
+            }
+        }
+    }, this);
+    
+    // Update jump state tracking
+    this.physics.world.on('worldstep', () => {
+        const wasJumping = isJumping;
+        isJumping = !player.body.touching.down;
+        
+        // Reset jumps when landing
+        if (!isJumping) {
+            jumpsAvailable = 2;
+        }
+        
+        // Landing animation
+        if (wasJumping && !isJumping) {
+            this.tweens.add({
+                targets: player,
+                scaleX: 1.2,
+                scaleY: 0.8,
+                duration: 100,
+                yoyo: true,
+                ease: 'Quad.easeOut'
+            });
+        }
+    });
+    
+    // Adjust physics for smoother jump
+    this.physics.world.gravity.y = 1800; // Lower from 2000 to soften falling
+    
+    nextObstacleX = gameWidth;
+    
+    // Create fire animation
+    this.anims.create({
+        key: 'burn',
+        frames: [
+            { key: 'fire_0' },
+            { key: 'fire_1' },
+            { key: 'fire_2' },
+            { key: 'fire_3' },
+            { key: 'fire_4' },
+            { key: 'fire_5' }
+        ],
+        frameRate: 12,
+        repeat: -1
+    });
+    
+    // Adjust player physics for more responsive falling
+    player.body.setDragX(100); // Add some drag to make movement feel better
+    player.body.setBounce(0); // No bounce when landing
+    
+    // Remove old dialog creation code and replace with HTML dialog handlers
+    document.getElementById('ticketChoice').addEventListener('click', () => {
+        handleTicketReward.call(this);
+        hideDialog.call(this);
+    });
+    
+    document.getElementById('coinChoice').addEventListener('click', () => {
+        handleCoinReward.call(this);
+        hideDialog.call(this);
+    });
+}
+
+function update() {
+    if (!player) return;
+    
+    // Set constant player velocity
+    player.setVelocityX(gameSpeed);
+    
+    // Enhanced falling animation
+    if (!player.body.touching.down) {
+        const verticalVelocity = player.body.velocity.y;
+        const normalizedVelocity = Math.max(-1, Math.min(1, verticalVelocity / 1000));
+        
+        // More pronounced falling animation
+        if (verticalVelocity > 300) { // If falling fast
+            const fallSquash = Math.min(1.3, 1 + Math.abs(normalizedVelocity) * 0.2);
+            player.scaleX = fallSquash;
+            player.scaleY = 1 / fallSquash;
+            player.angle = Math.min(45, verticalVelocity * 0.05); // Rotate based on fall speed
+        }
+    } else {
+        // Reset rotation and scale when on ground
+        player.angle = 0;
+        player.setScale(1);
+    }
+    
+    // Smooth out the jump animation based on vertical velocity
+    if (isJumping) {
+        const verticalVelocity = player.body.velocity.y;
+        const normalizedVelocity = Math.max(-1, Math.min(1, verticalVelocity / 1000));
+        
+        // Apply subtle rotation based on jump arc
+        player.angle = normalizedVelocity * 10;  // Max 10 degrees rotation
+        
+        // Apply subtle scale adjustments during jump
+        if (verticalVelocity < 0) {  // Going up
+            const stretchFactor = Math.max(0.9, 1 - Math.abs(normalizedVelocity) * 0.2);
+            player.scaleX = 1 / stretchFactor;
+            player.scaleY = stretchFactor;
+        } else {  // Falling
+            const squashFactor = Math.min(1.1, 1 + Math.abs(normalizedVelocity) * 0.1);
+            player.scaleX = squashFactor;
+            player.scaleY = 1 / squashFactor;
+        }
+    } else {
+        // Reset rotation when on ground
+        player.angle = 0;
+    }
+    
+    // Update starfield positions
+    this.starfieldTiles.forEach(starfield => {
+        // Calculate parallax offset
+        const parallaxX = (player.x * 0.01) % 1024;
+        const parallaxY = (player.y * 0.005) % 1024;
+        
+        starfield.tilePositionX = parallaxX;
+        starfield.tilePositionY = parallaxY;
+    });
+    
+    // Remove star updates - they are now fixed
+    // Only update game elements that should move
+    
+    // Update ground segments
+    ground.children.iterate(function(segment) {
+        if (segment && segment.x + gameWidth < player.x - gameWidth) {
+            segment.x += gameWidth * 3;
+            
+            // Adjust gap width and frequency
+            const gapChance = Phaser.Math.Between(0, 7);
+            if (gapChance === 0) {
+                // Further reduced gap width to approximately 150-180 pixels
+                // This is calculated based on player jump arc and speed
+                segment.setSize(gameWidth * 0.08, 200); // Reduced from 0.15 to 0.08 (8% of game width)
+                segment.setVisible(false);
+                segment.body.enable = false;
+                
+                // Add visual indicator for gap edges (optional)
+                const edgeLeft = segment.scene.add.rectangle(
+                    segment.x, 
+                    gameHeight - 5,
+                    4,
+                    10,
+                    0xFF4444
+                ).setDepth(6);
+                const edgeRight = segment.scene.add.rectangle(
+                    segment.x + segment.width,
+                    gameHeight - 5,
+                    4,
+                    10,
+                    0xFF4444
+                ).setDepth(6);
+                
+                // Store references to clean up later
+                segment.gapEdges = [edgeLeft, edgeRight];
+                
+                // Add subtle warning particles at gap edges (optional)
+                const particles = segment.scene.add.particles('starfield');
+                const emitterLeft = particles.createEmitter({
+                    x: segment.x,
+                    y: gameHeight - 10,
+                    scale: { start: 0.2, end: 0 },
+                    alpha: { start: 0.3, end: 0 },
+                    speed: 20,
+                    angle: { min: -30, max: 30 },
+                    frequency: 100,
+                    lifespan: 1000
+                });
+                const emitterRight = particles.createEmitter({
+                    x: segment.x + segment.width,
+                    y: gameHeight - 10,
+                    scale: { start: 0.2, end: 0 },
+                    alpha: { start: 0.3, end: 0 },
+                    speed: 20,
+                    angle: { min: 150, max: 210 },
+                    frequency: 100,
+                    lifespan: 1000
+                });
+                
+                // Store particle references for cleanup
+                segment.gapParticles = [particles];
+            } else {
+                segment.setSize(gameWidth, 200);
+                segment.setVisible(true);
+                segment.body.enable = true;
+                
+                // Clean up any existing gap edges and particles
+                if (segment.gapEdges) {
+                    segment.gapEdges.forEach(edge => edge.destroy());
+                    segment.gapEdges = null;
+                }
+                if (segment.gapParticles) {
+                    segment.gapParticles.forEach(particle => particle.destroy());
+                    segment.gapParticles = null;
+                }
+            }
+            
+            segment.refreshBody();
+            
+            // Random chance to add a trough
+            if (segment.visible && Phaser.Math.Between(0, 9) === 0) { // Only add troughs to visible segments
+                const trough = troughs.create(
+                    segment.x + Phaser.Math.Between(200, gameWidth - 320),
+                    gameHeight,
+                    'trough'
+                );
+                trough.setOrigin(0, 1);
+                trough.setDepth(4);
+                trough.refreshBody();
+                
+                const hitboxWidth = 100;
+                const hitboxOffset = 10;
+                trough.body.setSize(hitboxWidth, 180);
+                trough.body.setOffset(hitboxOffset, 20);
+            }
+        }
+        return true;
+    });
+    
+    // Update the cleanup section to include particle cleanup
+    ground.children.iterate(function(segment) {
+        if (segment && segment.x + segment.width < player.x - gameWidth) {
+            if (segment.gapEdges) {
+                segment.gapEdges.forEach(edge => edge.destroy());
+                segment.gapEdges = null;
+            }
+            if (segment.gapParticles) {
+                segment.gapParticles.forEach(particle => particle.destroy());
+                segment.gapParticles = null;
+            }
+        }
+        return true;
+    });
+    
+    // Clean up old troughs
+    troughs.children.iterate(function(trough) {
+        if (trough && trough.x + trough.width < player.x - gameWidth) {
+            trough.destroy();
+        }
+        return true;
+    });
+    
+    // Update trees - don't remove them for troughs anymore
+    decorations.children.iterate(function(tree) {
+        if (tree && tree.x < player.x - gameWidth) {
+            tree.destroy();
+        }
+        return true;
+    });
+    
+    // Decrease cooldown timer
+    if (coinSpawnCooldown > 0) {
+        coinSpawnCooldown--;
+    }
+    
+    // More frequent tree spawning, but check for troughs and gaps
+    if (Phaser.Math.Between(0, 100) < 15 && decorations.countActive() < 5) {
+        const spawnX = player.x + gameWidth + Phaser.Math.Between(100, 500);
+        
+        // Check if there's a trough at the spawn location
+        const hasTrough = Array.from(troughs.children.entries).some(
+            trough => Math.abs(trough.x - spawnX) < 150
+        );
+        
+        // Check if the spawn point is on solid ground
+        const onSolidGround = Array.from(ground.children.entries).some(segment => 
+            segment.visible && 
+            spawnX >= segment.x && 
+            spawnX <= segment.x + segment.width
+        );
+        
+        // Enhanced tree proximity check
+        const nearbyTrees = Array.from(decorations.children.entries).filter(
+            tree => Math.abs(tree.x - spawnX) < 300
+        );
+        
+        // Only proceed if on solid ground, no trough, and no nearby trees
+        if (onSolidGround && !hasTrough && nearbyTrees.length === 0) {
+            const tree = decorations.create(spawnX, gameHeight - 200, 'tree');
+            tree.setOrigin(0.5, 1);
+            tree.setDepth(2);
+            
+            // Only spawn the mystery box once per game session
+            if (!hasSpawnedMysteryBox && score >= 50) { // Only spawn after player has 50 points
+                hasSpawnedMysteryBox = true; // Set the flag to prevent future spawns
+                
+                // Calculate box position for a dramatic entrance
+                const boxX = spawnX;
+                const boxY = gameHeight - 350; // Slightly higher than normal for emphasis
+                
+                // Create mystery box container
+                const boxContainer = this.add.container(boxX, boxY);
+                boxContainer.setDepth(3);
+                
+                // Create box parts with golden appearance
+                const scale = 1.2; // Slightly larger than normal
+                const boxFront = this.add.image(0, 0, 'box_front').setScale(scale);
+                const boxTop = this.add.image(0, -20 * scale, 'box_top').setScale(scale);
+                const boxSide = this.add.image(20 * scale, 0, 'box_side').setScale(scale);
+                
+                // Make it golden and glowing
+                const goldColor = 0xFFD700;
+                boxFront.setTint(goldColor);
+                boxTop.setTint(goldColor);
+                boxSide.setTint(goldColor);
+                
+                // Add parts to container
+                boxContainer.add([boxSide, boxTop, boxFront]);
+                
+                // Add to mystery boxes group
+                mysteryBoxes.add(boxContainer);
+                
+                // Add animation properties
+                boxContainer.isOpening = false;
+                boxContainer.originalY = boxY;
+                
+                // Create dramatic entrance effect
+                boxContainer.setScale(0);
+                boxContainer.setAlpha(0);
+                
+                // Dramatic appearance animation
+                this.tweens.add({
+                    targets: boxContainer,
+                    scale: 1,
+                    alpha: 1,
+                    duration: 1000,
+                    ease: 'Back.easeOut',
+                    onComplete: () => {
+                        // Start floating animation after appearance
+                        this.tweens.add({
+                            targets: boxContainer,
+                            y: boxY - 20,
+                            duration: 2000,
+                            yoyo: true,
+                            repeat: -1,
+                            ease: 'Sine.easeInOut'
+                        });
+                        
+                        // Add continuous glow effect
+                        const glowParticles = this.add.particles('jump_particle');
+                        const emitter = glowParticles.createEmitter({
+                            x: boxX,
+                            y: boxY,
+                            speed: { min: 30, max: 60 },
+                            scale: { start: 0.4, end: 0 },
+                            alpha: { start: 0.6, end: 0 },
+                            lifespan: 1500,
+                            quantity: 1,
+                            frequency: 100,
+                            blendMode: 'ADD',
+                            tint: goldColor
+                        });
+                        
+                        // Store particles reference for cleanup
+                        boxContainer.particles = glowParticles;
+                    }
+                });
+                
+                // Add screen flash and camera effect for emphasis
+                const flash = this.add.rectangle(0, 0, gameWidth * 2, gameHeight * 2, 0xFFFFFF);
+                flash.setAlpha(0.3);
+                flash.setDepth(99);
+                flash.setScrollFactor(0);
+                
+                this.tweens.add({
+                    targets: flash,
+                    alpha: 0,
+                    duration: 500,
+                    ease: 'Cubic.easeOut',
+                    onComplete: () => flash.destroy()
+                });
+                
+                // Add subtle camera shake
+                this.cameras.main.shake(500, 0.005);
+                
+                // Play a special sound or visual effect here if you have one
+                
+                // Cleanup function
+                boxContainer.cleanup = () => {
+                    if (boxContainer.particles) {
+                        boxContainer.particles.destroy();
+                    }
+                };
+            }
+            
+            // Enhanced coin placement checks
+            if (coinSpawnCooldown <= 0 && Phaser.Math.Between(0, 9) < 3) {
+                // Calculate proposed coin position
+                const coinX = spawnX + Phaser.Math.Between(-15, 15);
+                const coinY = gameHeight - 280 + Phaser.Math.Between(-10, 10);
+                
+                // Check for any coins within a larger radius
+                const hasNearbyCoin = Array.from(coins.children.entries).some(
+                    existingCoin => {
+                        const distance = Phaser.Math.Distance.Between(
+                            coinX, coinY,
+                            existingCoin.x, existingCoin.y
+                        );
+                        return distance < 350; // Increased safe distance
+                    }
+                );
+                
+                // Check if too close to last spawn position
+                const tooCloseToLast = Phaser.Math.Distance.Between(
+                    coinX, coinY,
+                    lastCoinPosition.x, lastCoinPosition.y
+                ) < 350;
+                
+                if (!hasNearbyCoin && !tooCloseToLast) {
+                    const coin = coins.create(coinX, coinY, 'coin');
+                    coin.setOrigin(0.5, 0.5);
+                    coin.setDepth(3);
+                    coin.setScale(0.7);
+                    coin.isEmbedded = true;
+                    
+                    // Make coin static and disable physics
+                    coin.body.setAllowGravity(false);
+                    coin.body.setImmovable(true);
+                    
+                    // Store the position of this coin
+                    lastCoinPosition.x = coinX;
+                    lastCoinPosition.y = coinY;
+                    
+                    // Set cooldown to prevent rapid spawning
+                    coinSpawnCooldown = 30;
+                    
+                    // Create a unique identifier for animation tweens
+                    const tweenId = 'coin_' + new Date().getTime();
+                    
+                    // Float animation
+                    this.tweens.add({
+                        targets: coin,
+                        y: coinY - 3,
+                        duration: 2000,
+                        yoyo: true,
+                        repeat: -1,
+                        ease: 'Sine.easeInOut',
+                        key: tweenId + '_float'
+                    });
+                    
+                    // Enhanced 3D rotation effect
+                    this.tweens.add({
+                        targets: coin,
+                        scaleX: 0.1, // Almost flat when rotated
+                        duration: 1500,
+                        yoyo: true,
+                        repeat: -1,
+                        ease: 'Sine.easeInOut',
+                        key: tweenId + '_scaleX'
+                    });
+                    
+                    // Rotation animation synchronized with scale
+                    this.tweens.add({
+                        targets: coin,
+                        angle: 360,
+                        duration: 3000,
+                        repeat: -1,
+                        ease: 'Linear',
+                        key: tweenId + '_rotate'
+                    });
+                    
+                    // Store tween IDs for cleanup
+                    coin.tweenIds = [
+                        tweenId + '_float',
+                        tweenId + '_scaleX',
+                        tweenId + '_rotate'
+                    ];
+                }
+            }
+        }
+    }
+    
+    // Remove obstacle/coin generation code since we're focusing on tree-embedded coins
+    while (nextObstacleX < player.x + gameWidth * 1.5) {
+        if (Phaser.Math.Between(0, 1)) {
+            const groundExists = Array.from(ground.children.entries).some(
+                segment =>
+                    segment.x <= nextObstacleX &&
+                    segment.x + gameWidth >= nextObstacleX &&
+                    segment.visible // Check if the ground segment is visible
+            );
+            
+            if (groundExists) {
+                // Randomly choose between spike and fire obstacle
+                if (Phaser.Math.Between(0, 1) === 0) {
+                    const obstacle = obstacles.create(nextObstacleX, gameHeight - 70, 'obstacle');
+                    obstacle.setOrigin(0.5, 1);
+                    obstacle.setImmovable(true);
+                } else {
+                    // Calculate the player's path position at this x-coordinate
+                    const groundLevel = gameHeight - 165; // Lowered from 180 to 165
+                    
+                    // Create fire obstacle aligned with player path and ground surface
+                    const fireBase = fireObstacles.create(nextObstacleX, groundLevel, 'fire_base');
+                    fireBase.setOrigin(0.5, 1);
+                    fireBase.setDepth(8);
+                    fireBase.setImmovable(true);
+                    fireBase.setDisplaySize(80, 30); // Slightly thinner base
+                    
+                    // Create animated fire sprite - positioned lower
+                    const fireSprite = this.add.sprite(nextObstacleX, groundLevel - 30, 'fire_0');
+                    fireSprite.setDepth(9);
+                    fireSprite.play('burn');
+                    
+                    // Store fire sprite reference for cleanup
+                    fireBase.fireSprite = fireSprite;
+                    
+                    // Adjust the collision box to match player path
+                    fireBase.body.setSize(60, 60); // Adjusted collision height
+                    fireBase.body.setOffset(20, 0);
+                }
+            }
+        }
+        nextObstacleX += Phaser.Math.Between(400, 600);
+    }
+    
+    // Clean up obstacles/coins too far left
+    const removeX = player.x - gameWidth;
+    obstacles.children.iterate(function(obstacle) {
+        if (obstacle && obstacle.x < removeX) {
+            obstacle.destroy();
+        }
+        return true;
+    });
+    
+    // Clean up fire obstacles
+    fireObstacles.children.iterate(function(fireBase) {
+        if (fireBase && fireBase.x < removeX) {
+            if (fireBase.fireSprite) {
+                fireBase.fireSprite.destroy();
+            }
+            fireBase.destroy();
+        }
+        return true;
+    });
+    coins.children.iterate(function(coin) {
+        if (coin && coin.x < removeX) {
+            // Clean up tweens before destroying coin
+            if (coin.tweenIds) {
+                coin.tweenIds.forEach(tweenId => {
+                    this.tweens.remove(tweenId);
+                });
+            }
+            coin.destroy();
+        }
+        return true;
+    }, this);
+    
+    // Update mystery boxes
+    mysteryBoxes.children.iterate(function(boxContainer) {
+        if (!boxContainer) return true;
+        
+        // Remove if too far left
+        if (boxContainer.x < removeX) {
+            boxContainer.destroy();
+            return true;
+        }
+        
+        // Check distance to player
+        const distance = Phaser.Math.Distance.Between(
+            player.x, player.y,
+            boxContainer.x, boxContainer.y
+        );
+        
+        // Start opening animation when player is near
+        if (distance < 200 && !boxContainer.isOpening) {
+            boxContainer.isOpening = true;
+            
+            // Stop floating animation
+            this.tweens.killTweensOf(boxContainer);
+            
+            // Get box parts
+            const [boxSide, boxTop, boxFront] = boxContainer.list;
+            
+            // Opening animation sequence
+            this.tweens.add({
+                targets: boxTop,
+                y: -40,
+                angle: -45,
+                duration: 500,
+                ease: 'Back.easeOut'
+            });
+            
+            this.tweens.add({
+                targets: boxFront,
+                scaleY: 0.1,
+                y: 20,
+                duration: 400,
+                delay: 100,
+                ease: 'Back.easeIn'
+            });
+            
+            this.tweens.add({
+                targets: boxSide,
+                x: 30,
+                scaleX: 0.5,
+                duration: 400,
+                delay: 100,
+                ease: 'Back.easeIn',
+                onComplete: () => {
+                    // Show dialog after box opens
+                    showDialog.call(this);
+                    
+                    // Create sparkle effect
+                    const particles = this.add.particles('jump_particle');
+                    const emitter = particles.createEmitter({
+                        x: boxContainer.x,
+                        y: boxContainer.y,
+                        speed: { min: 50, max: 150 },
+                        scale: { start: 0.5, end: 0 },
+                        alpha: { start: 1, end: 0 },
+                        lifespan: 1000,
+                        quantity: 1,
+                        frequency: 50,
+                        blendMode: 'ADD',
+                        tint: 0xFFD700
+                    });
+                    
+                    // Clean up particles and box after animation
+                    this.time.delayedCall(1000, () => {
+                        particles.destroy();
+                        boxContainer.destroy();
+                    });
+                }
+            });
+        }
+        
+        return true;
+    }, this);
+    
+    // Check if player falls off
+    if (player.y > gameHeight + 500) { // Allow falling 500 pixels below screen
+        if (handleObstacleCollision.call(this)) {
+            gameOver.call(this);
+        }
+    }
+}
+
+function gameOver() {
+    // Stop all ongoing animations and physics
+    this.tweens.killAll();
+    this.physics.pause();
+    
+    // Clean up all particle systems
+    this.particles?.destroy();
+    this.coinParticles?.destroy();
+    
+    // Clean up all existing groups
+    mysteryBoxes?.clear(true, true);
+    obstacles?.clear(true, true);
+    coins?.clear(true, true);
+    fireObstacles?.clear(true, true);
+    decorations?.clear(true, true);
+    
+    // Short delay before exiting to show the impact
+    this.time.delayedCall(500, () => {
+        // Send message to Flutter to exit the game
+        FlutterApp.postMessage('exit_game');
+    });
+}
+
+function collectCoin(player, coin) {
+    if (!coin.active) return;
+    
+    // Play collection animation based on coin type
+    if (coin.isEmbedded) {
+        // Embedded coin collection effect
+        this.coinEmitter.setPosition(coin.x, coin.y);
+        this.coinEmitter.explode(8); // Emit 8 particles at once
+        
+        // Create expanding ring effect
+        const ring = this.add.circle(coin.x, coin.y, 10, 0xFFD700, 0.6);
+        ring.setDepth(15);
+        
+        this.tweens.add({
+            targets: ring,
+            radius: 40,
+            alpha: 0,
+            duration: 400,
+            ease: 'Quad.easeOut',
+            onComplete: () => ring.destroy()
+        });
+    } else {
+        // Regular coin collection effect
+        this.coinEmitter.setPosition(coin.x, coin.y);
+        this.coinEmitter.explode(5); // Emit 5 particles at once
+    }
+    
+    // Score increase with visual feedback
+    score += 5; // Changed from 1 to 5
+    updateCoinCount(score);
+    
+    FlutterApp.postMessage(JSON.stringify({
+        type: 'points_added',
+        points: 5, // Changed from 1 to 5
+        newBalance: score
+    }));
+    
+    // Score popup with shine effect
+    const scorePopup = this.add.text(coin.x, coin.y - 20, 
+        '+5', { // Changed from +3 to +5
+        fontSize: '24px',
+        fill: '#FFD700',
+        fontFamily: 'Righteous',
+        stroke: '#000',
+        strokeThickness: 4
+    }).setOrigin(0.5);
+    
+    // Add shine effect to score popup
+    this.tweens.add({
+        targets: scorePopup,
+        y: scorePopup.y - 50,
+        alpha: { from: 1, to: 0 },
+        scale: { from: 1, to: 1.2 },
+        duration: 1000,
+        ease: 'Cubic.easeOut',
+        onComplete: () => scorePopup.destroy()
+    });
+    
+    // Destroy the coin
+    coin.destroy();
+}
+
+function handleObstacleCollision() {
+    if (hearts > 0) {
+        hearts--;
+        removeHeart(hearts + 1);
+        
+        // Create burning animation if collision was with fire
+        const burningAnimation = () => {
+            // Stop player movement and animations
+            player.setVelocity(0, 0);
+            player.play('blink', false);
+            
+            // Create black smoke particles
+            const smokeParticles = this.add.particles('jump_particle');
+            const smokeEmitter = smokeParticles.createEmitter({
+                x: player.x,
+                y: player.y - 30,
+                speed: { min: 20, max: 50 },
+                angle: { min: -90, max: -45 },
+                scale: { start: 0.5, end: 0 },
+                alpha: { start: 0.6, end: 0 },
+                tint: 0x222222,
+                lifespan: 2000,
+                quantity: 3,
+                frequency: 50,
+                blendMode: 'MULTIPLY'
+            });
+            
+            // Create ember particles
+            const emberParticles = this.add.particles('jump_particle');
+            const emberEmitter = emberParticles.createEmitter({
+                x: player.x,
+                y: player.y - 30,
+                speed: { min: 50, max: 150 },
+                angle: { min: -120, max: -60 },
+                scale: { start: 0.2, end: 0 },
+                alpha: { start: 1, end: 0 },
+                tint: 0xFF4400,
+                lifespan: 1000,
+                quantity: 2,
+                frequency: 30,
+                blendMode: 'ADD'
+            });
+            
+            // Create ash particles falling
+            const ashParticles = this.add.particles('jump_particle');
+            const ashEmitter = ashParticles.createEmitter({
+                x: player.x,
+                y: player.y - 30,
+                speed: { min: 20, max: 50 },
+                angle: { min: 80, max: 100 },
+                scale: { start: 0.1, end: 0 },
+                alpha: { start: 0.4, end: 0 },
+                tint: 0x666666,
+                lifespan: 1500,
+                quantity: 1,
+                frequency: 100,
+                gravityY: 100,
+                blendMode: 'MULTIPLY'
+            });
+            
+            // Gradually turn player black
+            this.tweens.add({
+                targets: player,
+                tint: 0x000000,
+                duration: 500,
+                ease: 'Quad.easeIn'
+            });
+            
+            // Make player crumble and fade
+            this.tweens.add({
+                targets: player,
+                scaleY: 0.7,
+                scaleX: 1.2,
+                alpha: 0,
+                duration: 1000,
+                ease: 'Quad.easeIn',
+                onComplete: () => {
+                    // Clean up particles
+                    smokeParticles.destroy();
+                    emberParticles.destroy();
+                    ashParticles.destroy();
+                    
+                    // Store current hearts
+                    const currentHearts = hearts;
+                    
+                    // Restart scene
+                    score = 0;
+                    updateCoinCount(0);
+                    jumpsAvailable = 2;
+                    this.scene.restart();
+                    
+                    // After restart, restore hearts
+                    this.time.delayedCall(100, () => {
+                        hearts = currentHearts;
+                        for (let i = currentHearts + 1; i <= 3; i++) {
+                            removeHeart(i);
+                        }
+                    });
+                }
+            });
+        };
+        
+        // Check if collision was with fire
+        const collidedWithFire = Array.from(fireObstacles.children.entries).some(
+            fire => Math.abs(fire.x - player.x) < 50 && Math.abs(fire.y - player.y) < 50
+        );
+        
+        if (collidedWithFire) {
+            burningAnimation.call(this);
+        } else {
+            // Regular collision restart
+            const currentHearts = hearts;
+            score = 0;
+            updateCoinCount(0);
+            jumpsAvailable = 2;
+            this.scene.restart();
+            
+            this.time.delayedCall(100, () => {
+                hearts = currentHearts;
+                for (let i = currentHearts + 1; i <= 3; i++) {
+                    removeHeart(i);
+                }
+            });
+        }
+        
+        return false;
+    }
+    
+    return true;
+}
+
+function updateCoinCount(count) {
+    document.querySelector('.coin-count').textContent = count;
+}
+
+        /* Communication channel with Flutter */
+        function updateGameStats(score, lives) {
+            FlutterApp.postMessage(JSON.stringify({
+                type: 'game_stats',
+                score: score,
+                lives: lives
+            }));
+        }
+
+        function sendPointsToFlutter(points) {
+            FlutterApp.postMessage('points:' + points);
+        }
+
+        // Call this function whenever points are earned in the game
+        function onPointsEarned(amount) {
+            sendPointsToFlutter(amount);
+        }
+
+
+
+function removeHeart(heartNumber) {
+    // Find and remove the specific heart
+    const heart = document.querySelector('.heart[data-heart="' + heartNumber + '"]');
+    if (heart) {
+        heart.style.display = 'none'; // Hide the heart completely
+        heart.classList.add('lost');
+    }
+}
+
+function resetHearts() {
+    // Reset the hearts counter first
+    hearts = 3;
+    
+    // Reset all hearts to be visible again
+    document.querySelectorAll('.heart').forEach(heart => {
+        heart.style.display = ''; // Show the heart
+        heart.classList.remove('lost');
+    });
+}
+
+function showDialog() {
+    // Pause the game
+    this.physics.pause();
+    
+    // Show HTML dialog
+    document.querySelector('.mystery-dialog-overlay').style.display = 'block';
+    document.querySelector('.mystery-dialog').style.display = 'block';
+    
+    // Add click animation
+    document.querySelectorAll('.mystery-choice').forEach(choice => {
+        choice.addEventListener('click', function() {
+            this.classList.add('selected');
+        });
+    });
+}
+
+function hideDialog() {
+    // Hide HTML dialog
+    document.querySelector('.mystery-dialog-overlay').style.display = 'none';
+    document.querySelector('.mystery-dialog').style.display = 'none';
+    
+    // Remove selection class
+    document.querySelectorAll('.mystery-choice').forEach(choice => {
+        choice.classList.remove('selected');
+    });
+    
+    // Resume the game
+    this.physics.resume();
+}
+
+function handleTicketReward() {
+    // Create floating ticket animation
+    const ticketSprite = this.add.sprite(player.x, player.y - 50, 'coin'); // We'll use coin sprite temporarily
+    ticketSprite.setScale(0.5);
+    ticketSprite.setTint(0xFFD700);
+    
+    // Floating animation
+    this.tweens.add({
+        targets: ticketSprite,
+        y: ticketSprite.y - 100,
+        alpha: 0,
+        duration: 1000,
+        ease: 'Cubic.easeOut',
+        onComplete: () => {
+            ticketSprite.destroy();
+            
+            // Show notification
+            const notification = document.createElement('div');
+            notification.style.cssText = `
+                position: fixed;
+                top: 20px;
+                right: 20px;
+                background: rgba(28, 32, 47, 0.95);
+                color: #FFD700;
+                padding: 15px 20px;
+                border-radius: 10px;
+                border: 2px solid #FFD700;
+                font-size: 16px;
+                z-index: 1000;
+                animation: slideIn 0.5s ease-out;
+            `;
+            notification.innerHTML = '<i class="fas fa-ticket-alt"></i> Special Ticket Collected!';
+            document.body.appendChild(notification);
+            
+            // Remove notification after 3 seconds
+            setTimeout(() => {
+                notification.style.animation = 'slideOut 0.5s ease-in';
+                setTimeout(() => notification.remove(), 500);
+            }, 3000);
+        }
+    });
+    
+    // Add sparkle effect
+    const particles = this.add.particles('jump_particle');
+    const emitter = particles.createEmitter({
+        x: player.x,
+        y: player.y - 50,
+        speed: { min: 50, max: 150 },
+        scale: { start: 0.5, end: 0 },
+        alpha: { start: 1, end: 0 },
+        lifespan: 1000,
+        quantity: 2,
+        frequency: 50,
+        blendMode: 'ADD',
+        tint: 0xFFD700
+    });
+    
+    // Clean up particles after animation
+    this.time.delayedCall(1000, () => {
+        particles.destroy();
+    });
+}
+
+function handleCoinReward() {
+    // Add 150 coins with enhanced visual feedback
+    score += 150;
+    updateCoinCount(score);
+    
+    FlutterApp.postMessage(JSON.stringify({
+        type: 'points_added',
+        points: 150,
+        newBalance: score
+    }));
+    
+    // Show floating score text
+    const scoreText = this.add.text(player.x, player.y - 50, '+150', {
+        fontSize: '32px',
+        fill: '#FFD700',
+        fontFamily: 'Righteous',
+        stroke: '#000',
+        strokeThickness: 4
+    }).setOrigin(0.5);
+    
+    // Animate score text
+    this.tweens.add({
+        targets: scoreText,
+        y: scoreText.y - 100,
+        alpha: 0,
+        scale: 1.5,
+        duration: 1000,
+        ease: 'Cubic.easeOut',
+        onComplete: () => scoreText.destroy()
+    });
+}
+
+// Add to your CSS (in index.html)
+const style = document.createElement('style');
+style.textContent = `
+    @keyframes slideIn {
+        from {
+            transform: translateX(100%);
+            opacity: 0;
+        }
+        to {
+            transform: translateX(0);
+            opacity: 1;
+        }
+    }
+    
+    @keyframes slideOut {
+        from {
+            transform: translateX(0);
+            opacity: 1;
+        }
+        to {
+            transform: translateX(100%);
+            opacity: 0;
+        }
+    }
+`;
+document.head.appendChild(style);
+
+// Add back button functionality
+document.querySelector('.back-button').addEventListener('click', function() {
+    // Pause the game
+    game.scene.pause(game.scene.scenes[0]);
+    
+    // Show exit dialog
+    document.querySelector('.exit-dialog-overlay').style.display = 'block';
+    document.querySelector('.exit-dialog').style.display = 'block';
+});
+
+// Add exit dialog button handlers
+document.querySelector('.exit-no').addEventListener('click', function() {
+    // Hide dialog
+    document.querySelector('.exit-dialog-overlay').style.display = 'none';
+    document.querySelector('.exit-dialog').style.display = 'none';
+    
+    // Resume game
+    game.scene.resume(game.scene.scenes[0]);
+});
+
+document.querySelector('.exit-yes').addEventListener('click', function() {
+    // Send message to Flutter instead of using window.history
+    FlutterApp.postMessage('exit_game');
+});
+
+const coinChoice = document.getElementById('coinChoice');
+if (coinChoice) {
+    coinChoice.querySelector('.mystery-choice-title').textContent = '150 Coins';
+    coinChoice.querySelector('.mystery-choice-desc').textContent = 'Instant coin reward to spend!';
+}
+
+        </script>
+</body>
+</html> 
