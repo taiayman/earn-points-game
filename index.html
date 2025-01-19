@@ -2,6 +2,22 @@
 <html>
 <head>
     <meta charset="UTF-8">
+    <script>
+        // Initialize FlutterApp interface for communication with Flutter
+        window.FlutterApp = {
+            postMessage: function(message) {
+                if (window.flutter_inappwebview) {
+                    // For Android WebView
+                    window.flutter_inappwebview.callHandler('handleGameMessage', message);
+                } else if (window.webkit && window.webkit.messageHandlers) {
+                    // For iOS WKWebView
+                    window.webkit.messageHandlers.flutter.postMessage(message);
+                } else {
+                    console.warn('Flutter interface not available');
+                }
+            }
+        };
+    </script>
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
     <title>Cosmic Coin Dash</title>
     <script src="https://cdn.jsdelivr.net/npm/phaser@3.55.2/dist/phaser.min.js"></script>
